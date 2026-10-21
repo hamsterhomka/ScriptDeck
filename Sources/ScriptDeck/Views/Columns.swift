@@ -191,6 +191,14 @@ struct ScriptsColumn: View {
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
         .background(SubtleScrollers())
+        // Как в WebStorm: двойной клик или Enter запускает; уже запущенный не трогаем.
+        .contextMenu(forSelectionType: ScriptKey.self) { keys in
+            if let key = keys.first { ScriptMenu(key: key) }
+        } primaryAction: { keys in
+            for key in keys where !store.state(for: key).isActive {
+                store.run(key)
+            }
+        }
     }
 
     private func rows(_ scripts: [Script], in project: Project) -> some View {
@@ -380,9 +388,9 @@ private struct ScriptRow: View {
                     withAnimation(.snappy(duration: 0.2)) { store.togglePin(script, in: project) }
                 }
             }
-            if isHovered || state.isActive {
+            if state.isActive {
                 RunToggleButton(key: key, state: state)
-            } else if store.runCount(key) > 0 {
+            } else if !isHovered, store.runCount(key) > 0 {
                 Text("\(store.runCount(key))×")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.tertiary)
@@ -392,9 +400,19 @@ private struct ScriptRow: View {
         .padding(.vertical, 2)
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
-        .help(script.command)
-        .contextMenu {
-            Button(state.isActive ? "Остановить" : "Запустить") { store.toggle(key) }
+        .help("\(script.command)\nДвойной клик — запустить")
+    }
+}
+
+/// Контекстное меню скрипта: вешается на весь список через contextMenu(forSelectionType:).
+private struct ScriptMenu: View {
+    @Environment(ProjectStore.self) private var store
+    let key: ScriptKey
+
+    var body: some View {
+        if let project = store.project(for: key), let script = store.script(for: key) {
+            let isActive = store.state(for: key).isActive
+            Button(isActive ? "Остановить" : "Запустить") { store.toggle(key) }
             Button("Перезапустить") { store.restart(key) }
             Divider()
             Button(store.isPinned(script, in: project) ? "Открепить" : "Закрепить") {
