@@ -18,12 +18,6 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header(sessionCount: sessions.count)
 
-                if sessions.isEmpty, monitor.scripts.isEmpty {
-                    ContentUnavailableView("Ничего не запущено", systemImage: "moon.zzz",
-                                           description: Text("Здесь появятся все скрипты: из ScriptDeck, WebStorm, терминала\nи других пользователей этого Mac"))
-                        .padding(.top, 60)
-                }
-
                 if !sessions.isEmpty {
                     HomeSection(title: "ScriptDeck", subtitle: "\(sessions.count)") {
                         ForEach(sessions) { session in
@@ -46,6 +40,14 @@ struct HomeView: View {
             .padding(24)
             .frame(maxWidth: 980, alignment: .leading)
             .frame(maxWidth: .infinity)
+        }
+        .overlay {
+            // Пустое состояние — по центру всего окна, а не колонки контента.
+            if sessions.isEmpty, monitor.scripts.isEmpty {
+                ContentUnavailableView("Ничего не запущено", systemImage: "moon.zzz",
+                                       description: Text("Здесь появятся все скрипты: из ScriptDeck, WebStorm, терминала\nи других пользователей этого Mac"))
+                    .allowsHitTesting(false)
+            }
         }
         .background(Theme.detailBackground)
         .background(SubtleScrollers())
